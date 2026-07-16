@@ -21,7 +21,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install requirements
-        run: pip install requests matplotlib cloudscraper
+        run: pip install requests matplotlib
 
       - name: Run checking script
         env:

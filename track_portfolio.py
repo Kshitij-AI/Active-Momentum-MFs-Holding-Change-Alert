@@ -1,6 +1,7 @@
 import os
 import json
-import cloudscraper
+import requests
+import urllib.parse
 from chart_maker import create_visuals
 from email_sender import dispatch_email
 
@@ -15,20 +16,22 @@ FUNDS = {
 DATA_FILE = "last_known_portfolio.json"
 
 def fetch_fund_holdings(fund_slug):
-    url = f"https://groww.in/v1/api/data/mf/web/v3/scheme/search/{fund_slug}"
+    # 1. Define the target Groww URL
+    base_url = f"https://groww.in/v1/api/data/mf/web/v3/scheme/search/{fund_slug}"
     
-    # Create a scraper that perfectly mimics a Windows Desktop running Chrome
-    scraper = cloudscraper.create_scraper(
-        browser={
-            'browser': 'chrome',
-            'platform': 'windows',
-            'desktop': True
-        }
-    )
+    # 2. Encode the URL safely
+    encoded_url = urllib.parse.quote(base_url, safe='')
+    
+    # 3. Wrap it in a free public proxy to mask the GitHub Action IP
+    proxy_url = f"https://api.allorigins.win/raw?url={encoded_url}"
+    
+    # Using a Googlebot User-Agent as an extra layer (firewalls usually allow Google's indexing bots)
+    headers = {
+        "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+    }
     
     try:
-        # Use scraper.get instead of requests.get
-        response = scraper.get(url, timeout=15)
+        response = requests.get(proxy_url, headers=headers, timeout=20)
         response.raise_for_status()
         holdings_list = response.json().get("holdings", [])
         return {item.get("company_name", "").strip(): float(item.get("corpus_per", 0.0)) for item in holdings_list if item.get("company_name", "").strip()}
