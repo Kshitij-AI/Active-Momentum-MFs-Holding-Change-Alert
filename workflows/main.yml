@@ -1,0 +1,38 @@
+name: Check Mutual Funds
+
+on:
+  schedule:
+    - cron: '30 3,15 * * *'
+  workflow_dispatch: 
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write 
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install requirements
+        run: pip install requests matplotlib
+
+      - name: Run checking script
+        env:
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
+          RECEIVER_EMAIL: ${{ secrets.RECEIVER_EMAIL }}
+        run: python track_portfolio.py
+
+      - name: Save JSON back to repository
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+          git add last_known_portfolio.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update holdings data" && git push)
