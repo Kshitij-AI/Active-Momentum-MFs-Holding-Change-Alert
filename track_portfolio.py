@@ -111,8 +111,12 @@ def run_check():
             activity_html += "</ul>"
         activity_html += '</div>'
 
+    # if changes_detected:
+    #     print("Changes detected! Generating visuals and sending email.")
+    #     create_visuals(current_data, changes_detected, activity_log)
+    #     dispatch_email(status_summary, activity_html)
+
     create_visuals(current_data, changes_detected, activity_log)
-    # dispatch_email(status_summary, activity_html)
 
     print("\n--- TEST SUMMARY ---")
     print(status_summary)
