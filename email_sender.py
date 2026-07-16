@@ -14,6 +14,9 @@ def dispatch_email(status_summary, activity_html):
     msg['To'] = RECEIVER_EMAIL
     msg['Subject'] = "📊 Portfolio Activity & Analytics Report"
     
+    # FIX: Format the string here, outside the f-string
+    formatted_status = status_summary.replace('\n', '<br>')
+    
     html_content = f"""
     <html>
       <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; background-color: #f9f9f9; padding: 20px;">
@@ -22,7 +25,7 @@ def dispatch_email(status_summary, activity_html):
           
           <div style="background: #ecf0f1; padding: 15px; border-left: 4px solid #7f8c8d; margin-bottom: 20px;">
             <strong>Status Check:</strong><br>
-            {status_summary.replace('\n', '<br>')}
+            {formatted_status}
           </div>
           
           {activity_html}
