@@ -1,6 +1,6 @@
 import os
 import json
-import requests
+import cloudscraper
 from chart_maker import create_visuals
 from email_sender import dispatch_email
 
@@ -16,9 +16,19 @@ DATA_FILE = "last_known_portfolio.json"
 
 def fetch_fund_holdings(fund_slug):
     url = f"https://groww.in/v1/api/data/mf/web/v3/scheme/search/{fund_slug}"
-    headers = {"User-Agent": "Mozilla/5.0"}
+    
+    # Create a scraper that perfectly mimics a Windows Desktop running Chrome
+    scraper = cloudscraper.create_scraper(
+        browser={
+            'browser': 'chrome',
+            'platform': 'windows',
+            'desktop': True
+        }
+    )
+    
     try:
-        response = requests.get(url, headers=headers, timeout=10)
+        # Use scraper.get instead of requests.get
+        response = scraper.get(url, timeout=15)
         response.raise_for_status()
         holdings_list = response.json().get("holdings", [])
         return {item.get("company_name", "").strip(): float(item.get("corpus_per", 0.0)) for item in holdings_list if item.get("company_name", "").strip()}
