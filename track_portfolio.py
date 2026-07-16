@@ -16,28 +16,40 @@ FUNDS = {
 DATA_FILE = "last_known_portfolio.json"
 
 def fetch_fund_holdings(fund_slug):
-    # 1. Define the target Groww URL
     base_url = f"https://groww.in/v1/api/data/mf/web/v3/scheme/search/{fund_slug}"
-    
-    # 2. Encode the URL safely
     encoded_url = urllib.parse.quote(base_url, safe='')
     
-    # 3. Wrap it in a free public proxy to mask the GitHub Action IP
-    proxy_url = f"https://api.allorigins.win/raw?url={encoded_url}"
+    # We load up multiple proxy bypass routes
+    proxies = [
+        f"https://api.codetabs.com/v1/proxy?quest={encoded_url}",
+        f"https://corsproxy.io/?{encoded_url}"
+    ]
     
-    # Using a Googlebot User-Agent as an extra layer (firewalls usually allow Google's indexing bots)
     headers = {
-        "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json"
     }
     
-    try:
-        response = requests.get(proxy_url, headers=headers, timeout=20)
-        response.raise_for_status()
-        holdings_list = response.json().get("holdings", [])
-        return {item.get("company_name", "").strip(): float(item.get("corpus_per", 0.0)) for item in holdings_list if item.get("company_name", "").strip()}
-    except Exception as e:
-        print(f"Error fetching {fund_slug}: {e}")
-        return None
+    # The script will try each proxy one by one until one succeeds
+    for proxy_url in proxies:
+        try:
+            response = requests.get(proxy_url, headers=headers, timeout=15)
+            
+            if response.status_code == 200:
+                data = response.json()
+                holdings_list = data.get("holdings", [])
+                
+                # If we successfully parsed the holdings, return them!
+                if holdings_list:
+                    return {item.get("company_name", "").strip(): float(item.get("corpus_per", 0.0)) for item in holdings_list if item.get("company_name", "").strip()}
+            
+        except Exception as e:
+            # If this proxy fails, silently catch the error and try the next one in the list
+            continue
+            
+    # If the loop finishes and all proxies failed
+    print(f"Error: All proxies blocked/failed for {fund_slug}")
+    return None
 
 def run_check():
     if os.path.exists(DATA_FILE):
@@ -93,7 +105,10 @@ def run_check():
         activity_html += '</div>'
 
     create_visuals(current_data, changes_detected, activity_log)
-    dispatch_email(status_summary, activity_html)
+    # dispatch_email(status_summary, activity_html)
+
+    print("\n--- TEST SUMMARY ---")
+    print(status_summary)
     
     with open(DATA_FILE, 'w') as f:
         json.dump(current_data, f, indent=4)
